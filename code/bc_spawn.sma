@@ -20,10 +20,13 @@ new ready, readyer /* ._. */
 //new bool:g_isSemiClip[33]
 //new g_iPlayers[32], g_iNum, g_iPlayer
 
-new list[MAX_BATTLE]
+new list[MAX_BATTLE], id_spawn
 new textmsg
 
 new g_name[] = "respawn"
+new afk[33]
+
+
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 	
@@ -39,7 +42,17 @@ public plugin_init() {
 	register_clcmd("joinclass", "ClCmd_MenuSelect_JoinClass"); // VGUI menu*/
 	register_think(g_name,"taodangsuynghi")
 	
-	register_clcmd("say /real", "dem")
+	//register_clcmd("say /real", "dem")
+	register_clcmd("say /respawn", "hoisinh")
+	register_clcmd("say /hoisinh", "hoisinh")
+	
+	new ent = create_entity("info_target") 
+	
+	if(ent) 
+	{ 
+		entity_set_string(ent, EV_SZ_classname, g_name) 
+		entity_set_float(ent, EV_FL_nextthink, halflife_time() + 10.0) 
+	}
 }
 
 public plugin_natives() {
@@ -75,90 +88,109 @@ public dem() {
 	client_mau(0, "So nguoi that: %d" , get_realplayersnum() )
 }
 public client_disconnect(id) {
-	if( Get_BitVar(ready, id) )
+	if(get_progress() == WAITING )
 	{
-		UnSet_BitVar(ready, id) 
-		readyer --
-		new player = get_realplayersnum()
-		
-		if ( readyer >= player )
-			set_progress(COUNTDOWN)
-		else 
-			client_mau(0, "Cần thêm %d người nữa để LỒNG CHIM xuất hiện", player - readyer)
+		if( Get_BitVar(ready, id) )
+		{
+			UnSet_BitVar(ready, id) 
+			readyer --
+			new player = get_realplayersnum()
+			
+			if ( readyer >= player )
+				set_progress(COUNTDOWN)
+			else 
+				client_mau(0, "Cần thêm %d người nữa để LỒNG CHIM xuất hiện", player - readyer)
+		}
 	}
 	
-}/*
+}
 public client_connect(id) {
 	
-	//if( get_progress() == WAITING && get_user_team(id) == 2) ExecuteHamB(Ham_CS_RoundRespawn, id )
+	UnSet_BitVar(ready, id) 
+	client_mau(0, "Cần thêm %d người nữa để LỒNG CHIM xuất hiện", get_realplayersnum() - readyer)
 	
-}*/
+}
 public bc_progress(progress) {
 	
 	switch (progress)
 	{
 		case WAITING:
 		{
-			new players[32], iNum, index
+			new players[32], iNum
 			get_players(players, iNum, "e","CT")
 			for(new i = 0 ; i < iNum; i++) 
 			{ 
-				
-				index = players[i]
-				UnSet_BitVar(ready, index) 
+				UnSet_BitVar(ready, players[i]) 
+				afk[players[i]] = 0
 			}
 			readyer = 0
-			new ent = create_entity("info_target") 
-			
-			if(ent) 
-			{ 
-				entity_set_string(ent, EV_SZ_classname, g_name) 
-				entity_set_float(ent, EV_FL_nextthink, halflife_time() + 10.0) 
-			}
-			
 		}
 		case COUNTDOWN:
 		{
 			battle_time()
-			remove_entity_name(g_name);
 		}
-		case START : battle_destroy()
+		case START :
+		{
+			battle_destroy()
 		}
+		}
+}
+public bc_spawn(id) {
+	if( get_progress() != WAITING) user_silentkill(id)
+}
+public hoisinh(id) {
+	if(get_progress() != WAITING) return
+	if( !is_alive(id) ) ExecuteHamB(Ham_CS_RoundRespawn, id)
 }
 public taodangsuynghi(ent) {
 	
 	if(is_valid_ent(ent))
 	{
-		
-		
-		new players[32], playerCnt;
-		get_players(players, playerCnt, "be","CT");
-		
-		if ( playerCnt > 0 )  {
-			for ( new i = 0 ; i < playerCnt ; i++ )
-				ExecuteHamB(Ham_CS_RoundRespawn, players[i])
+		if(get_progress() == WAITING)
+		{
+			
+			new players[32], playerCnt;
+			get_players(players, playerCnt, "bce","CT");
+			
+			if ( playerCnt > 0 )  {
+				for ( new i = 0 ; i < playerCnt ; i++ )
+				{
+					afk_couter(players[i])
+					client_mau(players[i], "Go /respawn hoac /hoisinh de duoc hoi sinh")
+				}
+			}
 		}
-				
+		
 		
 		entity_set_float(ent, EV_FL_nextthink, halflife_time() + 10.0);
 	}
 	
 }
+public afk_couter(id) {
+	if( get_user_team(id) != 2) return
+	afk[id]++
+	if( afk[id] > 3 ) server_cmd("kick #%d ^"AFK ._.^"", id)
+}
 public battle_time() {
 	
 	new players[32], playerCnt;
-	get_players(players, playerCnt, "ae","CT");
+	get_players(players, playerCnt, "e","CT");
+	
+	id_spawn = random_num(1, g_TotalSpawns-1)
 	
 	for ( new i = 0 ; i < playerCnt ; i++ )
 		battle_point(players[i])
 	
 }
 public battle_point(id) {
+	
 	spawn_Preset(id)
 	
-	//strip_user_weapons(id)
-	fm_strip_user_weapons(id)
+	strip_user_weapons(id)
+	//fm_strip_user_weapons(id)
 	give_item(id, "weapon_knife")
+	
+	set_user_health(id, 100)
 	
 	client_mau(id, "Teleport thành công ra chiến trường.")
 	client_mau(id, "Sẵn sàng !gCHIẾN ĐẤU!y ._.")
@@ -168,20 +200,24 @@ public battle_destroy() {
 }
 public spawn_Preset(id)
 {
-	new n = random_num(0, g_TotalSpawns-1)
-	while (list[n])  random_num(0,1) ? random_num(0, n - 1) : random_num(n + 1, g_TotalSpawns-1)
 	
-	list[n] = 1
+	if( !is_alive(id) )
+		ExecuteHamB(Ham_CS_RoundRespawn, id)
+	if( id_spawn > g_TotalSpawns ) id_spawn = 0
+	while ( g_SpawnVecs[id_spawn][0]  == 0.0 && g_SpawnVecs[id_spawn][1]  == 0.0 && g_SpawnVecs[id_spawn][2]  == 0) 
+		id_spawn ++
 	
 	new Float:mins[3], Float:maxs[3]
 	pev(id, pev_mins, mins)
 	pev(id, pev_maxs, maxs)
 	engfunc(EngFunc_SetSize, id, mins, maxs)
-	engfunc(EngFunc_SetOrigin, id, g_SpawnVecs[n])
+	engfunc(EngFunc_SetOrigin, id, g_SpawnVecs[id_spawn])
 	set_pev(id, pev_fixangle, 1)
-	set_pev(id, pev_angles, g_SpawnAngles[n])
-	set_pev(id, pev_v_angle, g_SpawnVAngles[n])
+	set_pev(id, pev_angles, g_SpawnAngles[id_spawn])
+	set_pev(id, pev_v_angle, g_SpawnVAngles[id_spawn])
 	set_pev(id, pev_fixangle, 1)
+	
+	id_spawn++
 }
 //load spawns from file, Return 0 when didn't load anything.
 stock Load_SpawnFlie(type) //createEntity = 1 create an entity when load a point

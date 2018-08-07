@@ -39,11 +39,12 @@ new g_name[] = "haki"
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 	//RegisterHam(Ham_ObjectCaps, "player", "ObjectCaps" );
+	
 	bavuong = bc_qua_register("HAKI Ba vuong", HAKI)
 	quansat = bc_qua_register("HAKI Quan sat", HAKI)
 	
-	register_clcmd("say /bavuong", "bat_bavuong");
-	register_clcmd("say /quansat", "bat_quansat");
+	//register_clcmd("say /bavuong", "bat_bavuong");
+	//register_clcmd("say /quansat", "bat_quansat");
 	
 	new ent = create_entity("info_target") 
 	
@@ -64,7 +65,13 @@ public plugin_precache() {
 	
 	precache_sound(sound);
 }
-public bc_lanhqua(id, id_qua) {
+public bc_lanhqua_pre(id, id_qua) {
+	if( id_qua == bavuong || id_qua == quansat)
+		if( num[id] > 1)	return PLUGIN_HANDLED
+	
+	return PLUGIN_CONTINUE
+}
+public bc_lanhqua_post(id, id_qua) {
 	if( id_qua == bavuong)
 		bat_bavuong(id)
 	else if( id_qua == quansat)
@@ -90,13 +97,11 @@ public bc_use_post(id) {
 public bc_progress(progress) {
 	if( progress == WAITING )
 	{
-		new players[32], iNum, index
+		new players[32], iNum
 		get_players(players, iNum, "ce","CT")
 		for(new i = 0 ; i < iNum; i++) 
 		{ 
-			
-			index = players[i]
-			remove_haki(index)
+			remove_haki(players[i])
 		}
 		
 	}
@@ -104,6 +109,7 @@ public bc_progress(progress) {
 public bat_bavuong(id) {
 	Set_BitVar(p_bavuong, id)
 	num[id]++
+	
 }
 public bat_quansat(id) {
 	Set_BitVar(p_quansat, id)
@@ -185,12 +191,12 @@ public show(id)
 		{
 			if(gametime - DELAY_BAVUONG > g_Cooldown[BAVUONG][id])
 			{
-				set_hudmessage(0,255, 0, 0.0, 0.20, 0, 1.5, 1.5) // xanh la cay
+				set_hudmessage(0,255, 0, 0.0, 0.10, 0, 1.0, 1.0) // xanh la cay
 				ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Bá vương - SẴN SÀNG")
 			}
 			else 
 			{					
-				set_hudmessage(255,0, 0, 0.0, 0.20, 0, 1.5, 1.5) // do
+				set_hudmessage(255,0, 0, 0.0, 0.10, 0, 1.0, 1.0) // do
 				ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Bá vương - CHƯA SẴN SÀNG")
 			}
 		}
@@ -199,18 +205,18 @@ public show(id)
 		{
 			if(gametime - DELAY_QUANSAT > g_Cooldown[QUANSAT][id])
 			{
-				set_hudmessage(0, 255, 0, 0.0, 0.20, 0, 1.5, 1.5) // xanh la cay
+				set_hudmessage(0, 255, 0, 0.0, 0.10, 0, 1.0, 1.0) // xanh la cay
 				ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sát - SẴN SÀNG")
 			}
 			else if( Get_BitVar(active, id) )
 			{					
-				set_hudmessage(0, 0, 255, 0.0, 0.20, 0, 1.5, 1.5) // xanh duong
+				set_hudmessage(0, 0, 255, 0.0, 0.10, 0, 1.0, 1.0) // xanh duong
 				ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sát - ĐANG ĐƯỢC SỬ DỤNG")
 			}
 			else 
 			{
-				set_hudmessage(255, 0, 0, 0.0, 0.20, 0, 1.5, 1.5) //do 
-				ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sat - CHƯA SẴN SÀNG")
+				set_hudmessage(255, 0, 0, 0.0, 0.10, 0, 1.0, 1.0) //do 
+				ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sát - CHƯA SẴN SÀNG")
 			}
 		}
 	}
@@ -218,28 +224,28 @@ public show(id)
 	{
 		if(gametime - DELAY_BAVUONG > g_Cooldown[BAVUONG][id])
 		{
-			set_hudmessage(0,255, 0, 0.0, 0.20, 0, 1.5, 1.5) // xanh la cay
+			set_hudmessage(0,255, 0, 0.0, 0.10, 0, 1.0, 1.0) // xanh la cay
 			ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Bá vương - SẴN SÀNG")
 		}
 		else 
 		{					
-			set_hudmessage(255,0, 0, 0.0, 0.20, 0, 1.5, 1.5) // do
+			set_hudmessage(255,0, 0, 0.0, 0.10, 0, 1.0, 1.0) // do
 			ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Bá vương - CHƯA SẴN SÀNG")
 		}
 		if(gametime - DELAY_QUANSAT > g_Cooldown[QUANSAT][id])
 		{
-			set_hudmessage(0, 255, 0, 0.0, 0.23, 0, 1.5, 1.5) // xanh la cay
+			set_hudmessage(0, 255, 0, 0.0, 0.13, 0, 1.0, 1.0) // xanh la cay
 			ShowSyncHudMsg(id, g_synchud2, "[E] HAKI Quan sát - SẴN SÀNG")
 		}
 		else if( Get_BitVar(active, id) )
 		{					
-			set_hudmessage(0, 0, 255, 0.0, 0.23, 0, 1.5, 1.5) // xanh duong
+			set_hudmessage(0, 0, 255, 0.0, 0.13, 0, 1.0, 1.0) // xanh duong
 			ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sát - ĐANG ĐƯỢC SỬ DỤNG")
 		}
 		else 
 		{
-			set_hudmessage(255, 0, 0, 0.0, 0.23, 0, 1.5, 1.5) //do 
-			ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sat - CHƯA SẴN SÀNG")
+			set_hudmessage(255, 0, 0, 0.0, 0.13, 0, 1.0, 1.0) //do 
+			ShowSyncHudMsg(id, g_synchud1, "[E] HAKI Quan sát - CHƯA SẴN SÀNG")
 		}
 	}	
 }
@@ -346,12 +352,14 @@ public ring(const Float:origin[3], id) {
 public deactive(id) {
 	UnSet_BitVar(active, id)
 }
-stock client_mau(const id, const input[], any:...) { 
+stock client_mau(const id, const input[], any:...) 
+{ 
 	new count = 1, players[32] 
 	
 	static msg[191] 
 	
 	vformat(msg, 190, input, 3) 
+	format(msg, 190,"!g[Lồng chim] !y%s",msg)
 	
 	replace_all(msg, 190, "!g", "^4") 
 	replace_all(msg, 190, "!y", "^1") 
@@ -364,7 +372,7 @@ stock client_mau(const id, const input[], any:...) {
 	{ 
 		if (is_connected(players[i])) 
 		{ 
-			message_begin(MSG_ONE_UNRELIABLE, textmsg , _, players[i]) 
+			message_begin(MSG_ONE_UNRELIABLE, textmsg, _, players[i]) 
 			write_byte(players[i]) 
 			write_string(msg) 
 			message_end() 
@@ -393,14 +401,19 @@ stock normalize(Float:fIn[3], Float:fOut[3], Float:fMul)
 	fOut[0] *= fMul, fOut[1] *= fMul, fOut[2] *= fMul
 }
 public taodangsuynghi(ent) {
-	entity_set_float(ent, EV_FL_nextthink, halflife_time() + 1.0) 
-	
-	if(get_progress() != START) return;
-	if( !is_valid_ent(ent)) return;
-	new players[32], iNum
-	get_players(players, iNum, "ce","CT")
-	for(new i = 0 ; i < iNum; i++) 
-	{ 
-		show(players[i])
+	if( is_valid_ent(ent)) 
+	{
+		if(get_progress() == START)
+		{
+			
+			new players[32], iNum
+			get_players(players, iNum, "ce","CT")
+			for(new i = 0 ; i < iNum; i++) 
+			{ 
+				show(players[i])
+			}
+		}
+		
+		entity_set_float(ent, EV_FL_nextthink, halflife_time() + 1.0) 
 	}
 }

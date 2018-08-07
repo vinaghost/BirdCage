@@ -29,6 +29,7 @@ enum _:TOTAL_FORWARDS {
 	PROGRESS,
 	USE_BUTTON_PRE,
 	USE_BUTTON_POST,
+	SPAWN,
 	LAST
 }
 
@@ -43,6 +44,7 @@ enum _: {
 	START
 }
 new g_iMaxPlayers, textmsg, gmsgRadar
+new Float: g_Cooldown[32];
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 	
@@ -61,6 +63,7 @@ public plugin_init() {
 	g_forward[LAST] = CreateMultiForward("bc_last", ET_IGNORE, FP_CELL)
 	g_forward[USE_BUTTON_PRE] = CreateMultiForward("bc_use_pre", ET_IGNORE, FP_CELL)
 	g_forward[USE_BUTTON_POST] = CreateMultiForward("bc_use_post", ET_IGNORE, FP_CELL)
+	g_forward[SPAWN] = CreateMultiForward("bc_spawn", ET_IGNORE, FP_CELL)
 	//g_forward[TAKE_DMG] = CreateMultiForward("bc_takedmg", ET_IGNORE, FP_CELL, FP_CELL, FP_FLOAT)
 	textmsg = get_user_msgid("SayText")
 	g_iMaxPlayers = get_maxplayers()
@@ -86,7 +89,7 @@ public plugin_natives() {
 	register_native("is_connected","is_connected", 1)
 	register_native("get_progress","get_progress", 1)
 	register_native("set_progress","set_progress", 1)
-		
+	
 	// register_native("client_mau", "client_mau" , 1)
 }
 public client_putinserver(id) {	
@@ -95,7 +98,7 @@ public client_putinserver(id) {
 		g_HamBot = 1
 		set_task(0.1, "Register_HamBot", id)
 	}
-		
+	
 	Safety_Connected(id)
 }
 public client_disconnect(id) Safety_Disconnected(id)
@@ -105,7 +108,7 @@ public Safety_Connected(id) {
 	UnSet_BitVar(g_IsAlive, id)
 }
 public Event_NewRound() {
-	 set_progress(WAITING)
+	set_progress(WAITING)
 }
 
 public Safety_Disconnected(id) {
@@ -164,12 +167,15 @@ public fw_Killed_Post(id) {
 public taodangsuynghi(Ent)
 {
 	/*if (g_progress == START)
-		CheckLast()*/
+	CheckLast()*/
 	entity_set_float(Ent,EV_FL_nextthink, 1.0)
 }
 public fw_Spawn_Post(id) {
 	if(is_user_alive(id) && get_user_team(id) == 2)
+	{
 		Set_BitVar(g_IsAlive, id)
+		ExecuteForward(g_forward[SPAWN], g_ForwardResult, id)
+	}
 }
 public TraceAttack(victim, attacker, Float:damage, Float:direction[3], tracehandle, damagebits)
 {
@@ -224,16 +230,24 @@ public Killed(victim, attacker, shouldgib)
 public ObjectCaps(id) {
 	if(!is_alive(id))
 		return;
-
+	
 	if(get_user_button(id) & IN_USE)
-	{	
-		ExecuteForward(g_forward[USE_BUTTON_PRE], g_ForwardResult, id)
-		if (g_ForwardResult > PLUGIN_CONTINUE)
-			return;
-		ExecuteForward(g_forward[USE_BUTTON_POST], g_ForwardResult, id)
+	{
+		static Float: gametime ; gametime = get_gametime();
+		if(gametime - 1.0 > g_Cooldown[id])
+		{
+			g_Cooldown[id] = gametime;
+			
+			ExecuteForward(g_forward[USE_BUTTON_PRE], g_ForwardResult, id)
+			
+			if (g_ForwardResult > PLUGIN_CONTINUE)
+				return;
+			ExecuteForward(g_forward[USE_BUTTON_POST], g_ForwardResult, id)
+			
+		}
 	}
 }
-	
+
 public Count() {
 	new players[32]
 	new amount

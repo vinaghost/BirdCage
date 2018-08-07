@@ -90,7 +90,7 @@ public UpdateBot( ) {
 			
 			cs_set_user_team( id, CS_TEAM_T );
 			ExecuteHamB( Ham_CS_RoundRespawn, id );
-			entity_set_origin( id, Float:{ 999999.0, 999999.0, 999999.0 } );
+			entity_set_origin( id, Float:{ 0.0, 0.0, 0.0 } );
 			set_pev( id, pev_effects, pev( id, pev_effects ) | EF_NODRAW );
 			set_pev( id, pev_solid, SOLID_NOT );
 			dllfunc( DLLFunc_Think, id );

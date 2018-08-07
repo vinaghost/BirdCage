@@ -57,7 +57,7 @@ new const Float:g_NpcMaxs[npc][3] = {
 	{12.0, 12.0, 75.0}
 	
 }
-new Float: g_Cooldown[32];
+
 new textmsg
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
@@ -67,8 +67,10 @@ public plugin_init() {
 	
 	//RegisterHam(Ham_ObjectCaps, "player", "ObjectCaps", 1 );
 	
-	register_clcmd("say /npc", "npc_main");
-	//register_clcmd("say /delete", "xoathucong");
+	register_clcmd("say /npc", "npc_main", ADMIN_BAN)
+	
+	
+	
 	textmsg = get_user_msgid("SayText")
 	
 }
@@ -125,41 +127,32 @@ public npc_Think(iEnt)
 	}
 }*/
 public bc_use_pre(id) {
-	/*if(!is_alive(id))
-		return PLUGIN_CONTINUE;
 	
-	if(get_user_button(id) & IN_USE)
-	{*/
-		static Float: gametime ; gametime = get_gametime();
-		if(gametime - 1.0 > g_Cooldown[id])
-		{
-			static iTarget, iBody, szAimingEnt[32];
-			get_user_aiming(id, iTarget, iBody, 75);
-			entity_get_string(iTarget, EV_SZ_classname, szAimingEnt, charsmax(szAimingEnt));
-			
-			if(equali(szAimingEnt, g_NpcName[0]))
-			{
-				info(id)
-			}
-			else if(equali(szAimingEnt, g_NpcName[1]))
-			{
-				desc(id)
-			}
-			else if(equali(szAimingEnt, g_NpcName[3]))
-			{
-				bc_qua_random(id)
-			}
-			else if (equali(szAimingEnt, g_NpcName[2]))
-				diemdanh(id)
-			
-			//Set players cooldown to the current gametime
-			g_Cooldown[id] = gametime;
-			return PLUGIN_HANDLED
-		}
-	//}
+	static iTarget, iBody, szAimingEnt[32];
+	get_user_aiming(id, iTarget, iBody, 75);
+	entity_get_string(iTarget, EV_SZ_classname, szAimingEnt, charsmax(szAimingEnt));
+	
+	if(equali(szAimingEnt, g_NpcName[0]))
+	{
+		info(id)
+	}
+	else if(equali(szAimingEnt, g_NpcName[1]))
+	{
+		desc(id)
+	}
+	else if(equali(szAimingEnt, g_NpcName[3]))
+	{
+		bc_qua_random(id)
+		
+		remove_entity(pev(iTarget, pev_owner))
+		remove_entity(iTarget)		
+	}
+	else if (equali(szAimingEnt, g_NpcName[2]))
+		diemdanh(id)
 	
 	
-	return PLUGIN_CONTINUE
+	
+	return PLUGIN_HANDLED
 }
 
 public npc_main(id) {
@@ -169,8 +162,8 @@ public npc_main(id) {
 	//Add some items to the newly created menu
 	menu_additem(menu, "NPC DESC");
 	menu_additem(menu, "NPC CLASS");
-	menu_additem(menu, "NPC CHEST");
 	menu_additem(menu, "NPC DIEM DANH");
+	menu_additem(menu, "NPC CHEST");
 	menu_additem(menu, "SAVE NPC")
 	
 	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
@@ -400,14 +393,14 @@ public npc_3(id, menu, item) {
 }
 Create_Npc(id, type, Float:flOrigin[3]= { 0.0, 0.0, 0.0 }, Float:flAngle[3]= { 0.0, 0.0, 0.0 } ) {
 	new iEnt = create_entity("info_target");
-	
+	new owner
 	entity_set_string(iEnt, EV_SZ_classname, g_NpcName[type]);
 	
 	if(id)
 	{
 		entity_get_vector(id, EV_VEC_origin, flOrigin);
 		entity_set_origin(iEnt, flOrigin);
-		create_title(type, flOrigin)
+		owner = create_title(type, flOrigin)
 		flOrigin[2] += 80.0;
 		entity_set_origin(id, flOrigin);
 		
@@ -417,16 +410,17 @@ Create_Npc(id, type, Float:flOrigin[3]= { 0.0, 0.0, 0.0 }, Float:flAngle[3]= { 0
 	else 
 	{
 		entity_set_origin(iEnt, flOrigin);
-		create_title(type, flOrigin)
+		owner = create_title(type, flOrigin)
 	}
 	
-	if( type == 2) 
+	if( type == CHEST) 
 	{
 		//	creat_chest(iEnt)
 		flAngle[1] -= 90
 		
 	}
 	
+	set_pev(iEnt, pev_owner, owner)
 	entity_set_vector(iEnt, EV_VEC_angles, flAngle);
 	
 	entity_set_model(iEnt, g_NpcModel[type]);
@@ -453,9 +447,12 @@ create_title(type, Float:origin[3]) {
 	origin[0] -= 10.0;//x
 	//[1]		//y
 	origin[2] += 40.0;//z
+	if (type == CHEST) origin[2] += 10.0 
 	entity_set_origin(iEnt, origin);
 	set_rendering(iEnt, kRenderFxNone, 0, 0, 0, kRenderTransAdd, 255) 
 	entity_set_model(iEnt, g_NpcSprite[type]);
+	
+	return iEnt
 }
 
 Load_Npc(bool:chest = false) {

@@ -36,7 +36,7 @@ public plugin_init()
 	g_iszInfoTarget = engfunc(EngFunc_AllocString, "info_target");
 	readSpawns();
 	register_concmd("say /battle", "Command_EditSpawns", ADMIN_MAP, "Edits spawn configuration");
-	register_concmd("say /tele", "tele");
+	register_concmd("say /tele", "tele", ADMIN_MAP);
 	
 	SsInit(3500.0);
 	SsScan();

@@ -42,18 +42,23 @@ enum _: {
 	TRAIACQUY,
 	KHAC
 }
-new g_qua
+enum _:TOTAL_FORWARDS {
+	PRE,
+	POST
+}
+new g_qua[TOTAL_FORWARDS]
 new g_ForwardResult
 
 new textmsg
-
+new h_custom
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 	register_event("CurWeapon","CurWeapon","be")
 	register_forward(FM_EmitSound , "EmitSound");
 	
 	textmsg = get_user_msgid("SayText")
-	g_qua = CreateMultiForward("bc_lanhqua", ET_IGNORE, FP_CELL, FP_CELL)
+	g_qua[PRE] = CreateMultiForward("bc_lanhqua_pre", ET_IGNORE, FP_CELL, FP_CELL)
+	g_qua[POST] = CreateMultiForward("bc_lanhqua_post", ET_IGNORE, FP_CELL, FP_CELL)
 }
 public plugin_precache()  {
 	new i
@@ -66,19 +71,28 @@ public plugin_precache()  {
 public plugin_natives()
 {
 	register_native("bc_qua_register", "bc_qua_register")
-	register_native("bc_qua_random", "bc_qua_random")
+	register_native("bc_qua_random", "bc_qua_random", 1)
+	register_native("bc_qua_custom_hand", "bc_qua_custom_hand")
 	g_Name = ArrayCreate(32, 1)
 	g_Type = ArrayCreate(1, 1)
 }
 
+public bc_progress(progress) {
+	if( progress == COUNTDOWN )
+		h_custom = 0
+}
 public CurWeapon(id) {
 	if(!is_alive(id))
 		return PLUGIN_CONTINUE
 	
+		
 	new iClip, iAmmo, iWeap = get_user_weapon(id,iClip,iAmmo)
 	if(iWeap == CSW_KNIFE)
 	{
-		entity_set_string(id,EV_SZ_viewmodel,hand_models[0])
+		
+		if(!Get_BitVar(h_custom,id)) 
+			entity_set_string(id,EV_SZ_viewmodel,hand_models[0])
+			
 		entity_set_string(id,EV_SZ_weaponmodel,hand_models[1])
 	}
 	
@@ -99,19 +113,14 @@ public EmitSound(entity, channel, const sound[]) {
 	return FMRES_IGNORED;
 }
 public bc_qua_random(id) {
+	
 	new qua = random_num(0, g_Count - 1)
-	new name[32], verb[32], type
-	type = ArrayGetCell(g_Type, qua)
-	ArrayGetString(g_Name, qua, name, charsmax(name))
-	new p_name[32] 
-	get_user_name(id, p_name, charsmax(p_name))
-	switch (type) {
-		case HAKI: formatex(verb, charsmax(verb), "LINH HOI")
-		case TRAIACQUY: formatex(verb, charsmax(verb), "AN DUOC")
-		case KHAC: formatex(verb, charsmax(verb), "NHAN DUOC")
-	}
-	ExecuteForward(g_qua, g_ForwardResult, id, qua)
-	client_mau(0, "Chuc mung !g%s!y da !t%s !g%s", p_name, verb, name)
+		
+	ExecuteForward(g_qua[PRE], g_ForwardResult, id, qua)
+	
+	if (g_ForwardResult > PLUGIN_CONTINUE) return
+	
+	ExecuteForward(g_qua[POST], g_ForwardResult, id, qua)
 }
 public bc_qua_register(plugin_id, num_params) {
 	new name[32]
@@ -124,6 +133,12 @@ public bc_qua_register(plugin_id, num_params) {
 	
 	g_Count++
 	return g_Count - 1;
+}
+public bc_qua_custom_hand(plugin_id, num_params) {
+	if( get_param(2) )
+		Set_BitVar(h_custom,get_param(1))
+	else
+		UnSet_BitVar(h_custom,get_param(1))
 }
 stock client_mau(const id, const input[], any:...) 
 { 
